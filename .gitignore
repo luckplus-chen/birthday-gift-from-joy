@@ -1,6 +1,7 @@
 # 你自己的内容，别提交
 site/content.js
-site/photo/
+site/photo/*
+!site/photo/cake.png
 site/music/
 生日快乐.html
 _artifact.html
