@@ -120,6 +120,8 @@ function build(secs) {
     },
     lock: {
       password: val(passS.fields, "密码", "WISH"),
+      before: val(passS.fields, "密码框前面的词", ""),
+      after: val(passS.fields, "密码框后面的词", ""),
       wrongLines: ["输错第1次", "输错第2次", "输错第3次"]
         .map((k) => val(passS.fields, k)).filter(Boolean),
       success: val(passS.fields, "密码正确后", "是你。那可以开始了。"),

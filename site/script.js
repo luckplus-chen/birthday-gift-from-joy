@@ -142,6 +142,23 @@
      1. 密码
   ========================================================= */
   function initLock() {
+    /* 密码框数量跟着密码长度走。左右两个词是可选的——
+       留空就是一排光秃秃的格子；也可以写成 GO [____] JOY 那种藏话的玩法。 */
+    const pw = String(CONTENT.lock.password || "");
+    const wrap = $("#lock-boxes");
+    if (pw.length && pw.length !== wrap.children.length) {
+      wrap.innerHTML = Array.from({ length: pw.length }, () =>
+        `<input maxlength="1" class="lock__box" autocomplete="off" spellcheck="false" inputmode="latin">`
+      ).join("");
+    }
+    const setWord = (id, txt) => {
+      const el = $(id);
+      el.textContent = txt || "";
+      el.style.display = txt ? "" : "none";
+    };
+    setWord("#lock-before", CONTENT.lock.before);
+    setWord("#lock-after", CONTENT.lock.after);
+
     const boxes = $$(".lock__box");
     const row = $("#lock-pass");
     const hint = $("#lock-hint");
