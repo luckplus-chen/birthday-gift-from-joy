@@ -1,0 +1,49 @@
+{
+  "name": "here",
+  "productName": "Here",
+  "version": "1.0.0",
+  "description": "一个桌面宠物",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac dmg --universal"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.gift.here",
+    "productName": "Here",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "assets/**",
+      "签名.js"
+    ],
+    "mac": {
+      "category": "public.app-category.entertainment",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "icon": "build/icon.icns",
+      "identity": null
+    },
+    "dmg": {
+      "title": "Here",
+      "artifactName": "Here.dmg"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "afterPack": "签名.js"
+  }
+}

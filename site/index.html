@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>给你的</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- 氛围层 -->
+<div class="ambient"></div>
+<div class="grain"></div>
+<div class="vignette"></div>
+<canvas id="fx"></canvas>
+
+<!-- 解谜游戏风格的 HUD -->
+<header class="hud">
+  <button class="hud__back" id="hud-back">← 上一步</button>
+  <span class="hud__step" id="hud-step"></span>
+  <button class="hud__bgm is-off" id="bgm-btn" title="背景音乐">
+    <span class="hud__bars"><i></i><i></i><i></i></span>
+  </button>
+</header>
+
+<!-- 引导小气泡 -->
+<div class="hint" id="hint"><span id="hint-text"></span></div>
+
+<main id="stage">
+
+  <!-- ============ 1. 密码 ============ -->
+  <section class="scene is-active" data-scene="lock">
+    <div class="lock">
+      <div class="lock__pass" id="lock-pass">
+        <span class="lock__word">GO</span>
+        <div class="lock__boxes" id="lock-boxes">
+          <input maxlength="1" class="lock__box" autocomplete="off" spellcheck="false" inputmode="latin">
+          <input maxlength="1" class="lock__box" autocomplete="off" spellcheck="false" inputmode="latin">
+          <input maxlength="1" class="lock__box" autocomplete="off" spellcheck="false" inputmode="latin">
+          <input maxlength="1" class="lock__box" autocomplete="off" spellcheck="false" inputmode="latin">
+        </div>
+        <span class="lock__word">JOY</span>
+      </div>
+      <p class="lock__hint" id="lock-hint">&nbsp;</p>
+    </div>
+  </section>
+
+  <!-- ============ 2. 信 ============ -->
+  <section class="scene" data-scene="letter">
+    <div class="letter-wrap">
+      <div class="rod rod--top"><span></span></div>
+      <article class="paper" id="paper">
+        <div class="paper__inner" id="paper-inner"></div>
+        <div class="paper__foot">
+          <button class="roll-cue" id="roll-cue"></button>
+        </div>
+      </article>
+      <div class="rod rod--bottom" id="rod-bottom"><span></span></div>
+    </div>
+    <p class="scroll-cue" id="scroll-cue">↓</p>
+  </section>
+
+  <!-- ============ 3. 火柴过场 ============ -->
+  <section class="scene scene--dark" data-scene="match">
+    <div class="match-stage">
+      <p class="match__line" id="match-line1"></p>
+      <p class="match__line match__line--2" id="match-line2"></p>
+
+      <div class="match" id="match">
+        <svg viewBox="0 0 120 220" class="match__svg">
+          <!-- 火苗 -->
+          <g class="match__flame">
+            <ellipse class="match__halo" cx="60" cy="34" rx="30" ry="36"
+                     fill="var(--accent)" opacity=".55" style="filter:blur(15px)"/>
+            <path d="M60 8 C74 28 71 44 60 52 C49 44 46 28 60 8 Z" fill="var(--accent)"/>
+            <path d="M60 24 C67 34 65 43 60 47 C55 43 53 34 60 24 Z" fill="#fff8e6" opacity=".92"/>
+          </g>
+          <!-- 火柴头 -->
+          <circle class="match__head" cx="60" cy="60" r="11" fill="#b8452f"/>
+          <!-- 火柴杆 -->
+          <rect x="55" y="66" width="10" height="140" rx="5" fill="#e2c79a"/>
+          <rect x="55" y="66" width="4" height="140" rx="2" fill="#f2ddb8" opacity=".7"/>
+        </svg>
+        <span class="match__spark" id="match-spark"></span>
+      </div>
+
+      <p class="match__cue" id="match-cue"></p>
+    </div>
+  </section>
+
+  <!-- ============ 4. 蛋糕 ============ -->
+  <section class="scene" data-scene="cake">
+    <div class="cake-stage">
+      <p class="cake__line" id="cake-line"></p>
+      <p class="cake__wish" id="cake-wish"></p>
+      <div class="cake" id="cake">
+        <div class="cake__art" id="cake-art"></div>
+      </div>
+      <button class="wish-done" id="wish-done"></button>
+      <p class="cake__sub" id="cake-sub"></p>
+      <button class="mic-btn" id="mic-btn">…或者对着麦克风真的吹</button>
+    </div>
+  </section>
+
+  <!-- ============ 4. 庆祝 ============ -->
+  <section class="scene" data-scene="celebrate">
+    <div class="celebrate">
+      <h1 class="celebrate__cn" id="cel-cn"></h1>
+      <p class="celebrate__en" id="cel-en"></p>
+      <button class="next-btn" id="cel-next"></button>
+    </div>
+  </section>
+
+  <!-- ============ 6. 摸黑找礼物 ============ -->
+  <section class="scene scene--pitch" data-scene="dark">
+    <div class="dark-stage">
+      <p class="dark__line" id="dark-line"></p>
+      <!-- 藏在黑暗里的盒子，只有光扫过才看得见 -->
+      <div class="dark__hidden" id="dark-hidden">
+        <svg viewBox="0 0 220 200" class="dark__box">
+          <rect x="24" y="52" width="172" height="34" rx="7" fill="var(--gift)" stroke="var(--gift-line)" stroke-width="3"/>
+          <rect x="98" y="52" width="24" height="34" fill="var(--ribbon)"/>
+          <path d="M110 52 C96 34 74 30 76 44 C78 55 98 54 110 52 Z" fill="var(--ribbon)" stroke="var(--ribbon-d)" stroke-width="2.4"/>
+          <path d="M110 52 C124 34 146 30 144 44 C142 55 122 54 110 52 Z" fill="var(--ribbon)" stroke="var(--ribbon-d)" stroke-width="2.4"/>
+          <circle cx="110" cy="50" r="6" fill="var(--ribbon-d)"/>
+          <rect x="36" y="84" width="148" height="98" rx="6" fill="var(--gift)" stroke="var(--gift-line)" stroke-width="3"/>
+          <rect x="98" y="84" width="24" height="98" fill="var(--ribbon)"/>
+        </svg>
+      </div>
+      <p class="dark__cue" id="dark-cue"></p>
+    </div>
+    <!-- 手电筒遮罩：跟着鼠标开一个洞 -->
+    <div class="torch" id="torch"></div>
+  </section>
+
+  <!-- ============ 7. 礼物 → 安装包弹出来 ============ -->
+  <section class="scene" data-scene="gift">
+    <div class="gift-stage">
+      <p class="gift__line" id="gift-line"></p>
+
+      <div class="gift-area">
+        <!-- 安装包的落位槽：先占好高度，弹出来的东西就永远在画面里 -->
+        <div class="dmg-slot">
+        <div class="dmg" id="dmg">
+          <svg viewBox="0 0 120 120" class="dmg__svg">
+            <rect x="8" y="8" width="104" height="104" rx="24" fill="url(#dmgG)" stroke="#b9c6d2" stroke-width="2.5"/>
+            <defs>
+              <linearGradient id="dmgG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#f4f7fa"/><stop offset="1" stop-color="#cdd8e2"/>
+              </linearGradient>
+            </defs>
+            <circle cx="60" cy="60" r="30" fill="none" stroke="#8fa2b4" stroke-width="3"/>
+            <circle cx="60" cy="60" r="9" fill="#8fa2b4"/>
+            <path d="M60 30 A30 30 0 0 1 86 46" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" opacity=".85"/>
+          </svg>
+          <p class="dmg__name" id="dmg-name"></p>
+        </div>
+        </div>
+
+        <!-- 盒子 -->
+        <div class="giftbox" id="giftbox">
+          <svg viewBox="0 0 220 200" class="giftbox__svg">
+            <g class="giftbox__lid" id="gift-lid">
+              <rect x="24" y="52" width="172" height="34" rx="7" fill="var(--gift)" stroke="var(--gift-line)" stroke-width="3"/>
+              <rect x="98" y="52" width="24" height="34" fill="var(--ribbon)"/>
+              <path d="M110 52 C96 34 74 30 76 44 C78 55 98 54 110 52 Z" fill="var(--ribbon)" stroke="var(--ribbon-d)" stroke-width="2.4"/>
+              <path d="M110 52 C124 34 146 30 144 44 C142 55 122 54 110 52 Z" fill="var(--ribbon)" stroke="var(--ribbon-d)" stroke-width="2.4"/>
+              <circle cx="110" cy="50" r="6" fill="var(--ribbon-d)"/>
+            </g>
+            <rect x="36" y="84" width="148" height="98" rx="6" fill="var(--gift)" stroke="var(--gift-line)" stroke-width="3"/>
+            <rect x="98" y="84" width="24" height="98" fill="var(--ribbon)"/>
+          </svg>
+        </div>
+
+        <!-- 弹出瞬间的冲击波 -->
+        <span class="burst" id="burst"></span>
+      </div>
+
+      <p class="gift__sub" id="gift-sub"></p>
+      <p class="pet__desc" id="pet-desc"></p>
+      <button class="next-btn next-btn--solid" id="pet-btn"></button>
+      <p class="pet__note" id="pet-note"></p>
+    </div>
+  </section>
+
+</main>
+
+<audio id="bgm" loop preload="none"></audio>
+
+<script src="content.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

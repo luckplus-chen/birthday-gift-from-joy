@@ -1,0 +1,643 @@
+/* ===========================================================
+   生日网站 v2 — 解谜游戏画风
+   一条线：密码 → 读信 → 卷信 → 蛋糕 → 庆祝 → 礼物 → 桌宠
+   基调：暖木色 + 烛光橙，像在一张昏黄台灯下的桌子上操作
+=========================================================== */
+
+:root{
+  --bg:        #2a1d15;
+  --bg-deep:   #1a110c;
+  --bg-2:      rgba(255,240,220,.09);   /* 角色线稿的头发填充 */
+  --glow:      rgba(224,167,94,.16);
+
+  --ink:       #f6ecdc;
+  --ink-dim:   #c0ab92;
+  --ink-faint: #8a7862;
+
+  --accent:    #e0a75e;
+  --accent-soft: rgba(224,167,94,.20);
+  --line:      rgba(246,236,220,.14);
+  --line-2:    rgba(246,236,220,.26);
+  --danger:    #d4795f;
+
+  /* 信纸 */
+  --paper:     #f4e7cd;
+  --paper-2:   #ecdcbd;
+  --paper-line:rgba(120,95,60,.16);
+  --hand:      #4a3524;
+
+  /* 礼物盒 */
+  --gift:      #c9704f;
+  --gift-line: #8f4630;
+  --ribbon:    #f0d08a;
+  --ribbon-d:  #d1a95c;
+
+  /* 楷体：笔画清楚不连笔，1278 字的信读下来不费劲，又还是"写"出来的。
+     macOS 自带，所以不用内嵌字体文件（省了 5MB）。
+     后面几个是别的系统上的同名/近似字体，退到最后才是 cursive。 */
+  --font-hand: 'Kaiti SC', '楷体-简', 'STKaiti', '华文楷体', 'KaiTi', '楷体',
+               'Kaiti TC', 'BiauKai', 'Hanzipen SC', cursive;
+  --font-hand-en: 'Caveat', 'Snell Roundhand', 'Apple Chancery', cursive;
+  --font-ui:   'IBM Plex Mono', ui-monospace, monospace;
+
+  --ease: cubic-bezier(.22,.68,.14,1);
+}
+
+
+/* ===========================================================
+   手型光标：整站都是一只手，像点击式解谜游戏
+=========================================================== */
+:root{
+  /* 张开的手 —— 默认 */
+  --cur-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Cpath d='M9 19V9.5c0-1.7 2.7-1.7 2.7 0V17h1V6c0-1.8 2.8-1.8 2.8 0v11h1V6.8c0-1.8 2.8-1.8 2.8 0V17h1v-6.4c0-1.7 2.7-1.7 2.7 0v11.2c0 5.4-3.4 8.7-8.3 8.7-3.9 0-6.1-1.9-7.6-5l-2.6-5.3c-.8-1.7 1.5-3 2.6-1.6z' fill='%23f6ecdc' stroke='%23241708' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") 12 4, auto;
+  /* 食指指向 —— 可点击 */
+  --cur-point: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Cpath d='M13 4.2c0-1.8 2.9-1.8 2.9 0V14h1.2v-2.4c0-1.7 2.8-1.7 2.8 0V14h1.2v-1.8c0-1.7 2.8-1.7 2.8 0V14h1.2v-1.1c0-1.6 2.7-1.6 2.7 0v7.4c0 4.8-3 8-7.5 8h-2.7c-3.8 0-6-1.8-7.6-5.2l-2.7-5.9c-.8-1.7 1.5-3.2 2.6-1.7l2.7 3.4z' fill='%23ffdca6' stroke='%23241708' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") 15 3, pointer;
+  /* 握拳 —— 拖拽中 */
+  --cur-grab: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Cpath d='M8 17c0-2 1.4-3.4 3.2-3.4h9.4c3.4 0 5.8 2.2 5.8 5.6v2.6c0 4.6-3.2 7.6-7.8 7.6h-2.4c-3.7 0-5.9-1.8-7.4-5L8.2 21C7.6 19.6 8 18.2 8 17z' fill='%23f6ecdc' stroke='%23241708' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M12 13.6v-2.2M16 13.6v-3M20 13.6v-2.2' stroke='%23241708' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") 16 14, grabbing;
+}
+html, body{ cursor:var(--cur-hand); }
+button, .cake, .giftbox, .match, .roll-cue, .dark__hidden, a, input,
+.hud__back, .hud__bgm, .mic-btn, .wish-done{ cursor:var(--cur-point); }
+.match:active, .torch{ cursor:var(--cur-grab); }
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+
+html,body{
+  height:100%; overflow:hidden;
+  background:var(--bg-deep);
+  color:var(--ink);
+  font-family:var(--font-ui);
+  -webkit-font-smoothing:antialiased;
+  cursor:default;
+}
+::selection{ background:var(--accent-soft); }
+button{ font-family:inherit; color:inherit; background:none; border:none; cursor:pointer; }
+input{ font-family:inherit; }
+
+/* ---------- 氛围 ---------- */
+.ambient{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(88% 70% at 50% 26%, var(--glow), transparent 68%),
+    var(--bg);
+  transition:background 1.3s var(--ease);
+}
+.grain{
+  position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.vignette{
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:radial-gradient(120% 100% at 50% 42%, transparent 46%, rgba(12,7,4,.62) 100%);
+}
+#fx{ position:fixed; inset:0; z-index:70; pointer-events:none; }
+
+/* ---------- HUD ---------- */
+.hud{
+  position:fixed; top:0; left:0; right:0; z-index:60;
+  display:flex; align-items:center; padding:18px 24px;
+  font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-faint);
+  pointer-events:none;
+}
+.hud__step{ pointer-events:none; }
+.hud__back{
+  pointer-events:auto; display:none; align-items:center; gap:7px;
+  margin-right:18px; padding:6px 13px; border:1px solid var(--line); border-radius:999px;
+  font-size:10px; letter-spacing:.14em; color:var(--ink-faint);
+  transition:color .25s, border-color .25s, transform .18s;
+}
+.hud__back.is-visible{ display:inline-flex; }
+.hud__back:hover{ color:var(--accent); border-color:var(--accent); transform:translateX(-2px); }
+.hud__bgm{
+  margin-left:auto; pointer-events:auto;
+  display:none; align-items:center; gap:6px;
+  padding:6px 11px; border:1px solid var(--line); border-radius:999px;
+  transition:color .25s, border-color .25s;
+}
+.hud__bgm.is-visible{ display:inline-flex; }
+.hud__bgm:hover{ color:var(--accent); border-color:var(--accent); }
+.hud__bars{ display:flex; align-items:flex-end; gap:2px; height:11px; }
+.hud__bars i{ width:2px; border-radius:1px; background:currentColor; height:5px; animation:eq .9s ease-in-out infinite; }
+.hud__bars i:nth-child(2){ height:10px; animation-delay:.15s; }
+.hud__bars i:nth-child(3){ height:7px; animation-delay:.3s; }
+@keyframes eq{ 0%,100%{ transform:scaleY(.4); } 50%{ transform:scaleY(1); } }
+.hud__bgm.is-off .hud__bars i{ animation:none; transform:scaleY(.35); }
+
+/* ---------- 引导提示：解谜游戏里那种浮现的发光字 ---------- */
+.hint{
+  position:fixed; z-index:65; pointer-events:none;
+  font-family:var(--font-hand); font-size:clamp(17px,2.1vw,21px);
+  color:#ffdca6; letter-spacing:.04em; white-space:nowrap;
+  text-shadow:0 0 14px rgba(255,200,120,.85), 0 0 34px rgba(224,167,94,.55), 0 2px 4px rgba(0,0,0,.6);
+  opacity:0; transform:translateY(8px);
+  transition:opacity .9s var(--ease), transform .9s var(--ease);
+}
+.hint.is-on{ opacity:1; transform:translateY(0); animation:hintglow 2.6s ease-in-out infinite; }
+/* 信纸那种浅底色上，发光琥珀字看不清，换成深色 */
+.hint.on-light{
+  color:#5a4028;
+  text-shadow:0 0 10px rgba(255,255,255,.9), 0 0 22px rgba(255,240,210,.7);
+}
+@keyframes hintglow{
+  0%,100%{ opacity:.72; transform:translateY(0); }
+  50%    { opacity:1;   transform:translateY(-5px); }
+}
+
+/* 可交互目标的呼吸光晕 */
+.hot{ position:relative; }
+.hot::after{
+  content:''; position:absolute; inset:-14px; border-radius:22px; pointer-events:none;
+  box-shadow:0 0 0 0 var(--accent-soft); opacity:0;
+  transition:opacity .4s;
+}
+.hot.is-pulsing::after{ opacity:1; animation:hotpulse 2.2s ease-out infinite; }
+@keyframes hotpulse{
+  0%{ box-shadow:0 0 0 0 rgba(224,167,94,.42); }
+  100%{ box-shadow:0 0 0 22px rgba(224,167,94,0); }
+}
+
+/* ---------- 场景框架 ---------- */
+#stage{ position:relative; width:100%; height:100%; }
+.scene{
+  position:fixed; inset:0; z-index:10;
+  display:flex; align-items:center; justify-content:center;
+  /* 内容比屏幕高的时候，align-items:center 会把顶部顶到可视区上面去，
+     而浏览器滚不到负值——信一长，前面几段就永远看不到了。
+     safe center 在放不下时自动退回顶部对齐。 */
+  align-items:safe center;
+  padding:74px 22px 44px;
+  opacity:0; pointer-events:none;
+  transform:scale(1.03); filter:blur(7px);
+  transition:opacity .8s var(--ease), transform .8s var(--ease), filter .8s var(--ease);
+  overflow-y:auto; overflow-x:hidden;
+}
+.scene.is-active{ opacity:1; pointer-events:auto; transform:scale(1); filter:blur(0); }
+/* 万一哪个浏览器不认 safe center：auto 外边距同样是"放得下就居中，
+   放不下就贴顶"，而且所有浏览器都支持。两道保险一起上。 */
+.scene > *{ margin-block:auto; }
+.scene::-webkit-scrollbar{ width:0; }
+
+/* ===========================================================
+   1. 密码
+=========================================================== */
+.lock{ text-align:center; display:flex; flex-direction:column; align-items:center; gap:30px; }
+.lock__pass{ display:flex; align-items:center; gap:16px; }
+.lock__word{
+  font-family:var(--font-ui); font-weight:500;
+  font-size:clamp(26px,4.4vw,40px);
+  color:var(--ink); opacity:.55; letter-spacing:.16em;
+}
+.lock__boxes{ display:flex; gap:9px; }
+.lock__box{
+  width:50px; height:62px; border-radius:9px;
+  background:rgba(0,0,0,.24); border:1px solid var(--line-2);
+  color:var(--ink); text-align:center; font-size:25px; text-transform:uppercase;
+  font-family:var(--font-ui); outline:none; caret-color:var(--accent);
+  transition:border-color .3s, box-shadow .3s, background .3s;
+}
+.lock__box:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); background:rgba(0,0,0,.34); }
+.lock__pass.is-bad{ animation:shake .42s; }
+.lock__pass.is-bad .lock__box{ border-color:var(--danger); }
+@keyframes shake{
+  0%,100%{ transform:translateX(0); }
+  20%{ transform:translateX(-9px); } 40%{ transform:translateX(8px); }
+  60%{ transform:translateX(-6px); } 80%{ transform:translateX(4px); }
+}
+.lock__hint{
+  min-height:20px; font-family:var(--font-ui); font-size:13px; letter-spacing:.05em; color:var(--danger);
+  opacity:0; transition:opacity .35s;
+}
+.lock__hint.is-on{ opacity:.92; }
+
+/* ===========================================================
+   2. 信
+=========================================================== */
+.letter-wrap{
+  width:100%; max-width:640px; margin:0 auto;
+  display:flex; flex-direction:column; align-items:center;
+  transform-origin:top center;
+}
+/* 卷轴 */
+.rod{ width:calc(100% + 26px); height:22px; position:relative; z-index:3; flex-shrink:0; }
+.rod span{
+  position:absolute; inset:0; border-radius:11px;
+  background:linear-gradient(180deg,#7a4a2c,#4e2c18 60%,#33190c);
+  box-shadow:0 3px 10px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,220,180,.28);
+}
+.rod span::before, .rod span::after{
+  content:''; position:absolute; top:-3px; bottom:-3px; width:13px; border-radius:7px;
+  background:linear-gradient(180deg,#8d5732,#4a2915);
+}
+.rod span::before{ left:-4px; } .rod span::after{ right:-4px; }
+.rod--bottom{ opacity:0; transition:opacity .5s var(--ease); }
+.rod--bottom.is-on{ opacity:1; }
+
+.paper{
+  width:100%; position:relative; overflow:hidden;
+  background:
+    repeating-linear-gradient(180deg, transparent, transparent 37px, var(--paper-line) 37px, var(--paper-line) 38px),
+    linear-gradient(175deg, var(--paper), var(--paper-2));
+  color:var(--hand);
+  padding:46px 46px 32px;
+  box-shadow:0 20px 50px rgba(0,0,0,.46), inset 0 0 60px rgba(150,110,60,.10);
+  transform-origin:top center;
+  transition:max-height 1.5s var(--ease), opacity .5s var(--ease);
+  max-height:none;
+}
+/* 纸的左右边缘阴影，像卷起来的纸筒 */
+.paper::before, .paper::after{
+  content:''; position:absolute; top:0; bottom:0; width:20px; pointer-events:none;
+}
+.paper::before{ left:0;  background:linear-gradient(90deg, rgba(120,85,45,.16), transparent); }
+.paper::after { right:0; background:linear-gradient(270deg, rgba(120,85,45,.16), transparent); }
+
+.paper__inner p{
+  font-family:var(--font-hand);
+  font-size:clamp(20px,2.5vw,25px);
+  line-height:38px;              /* 对齐横线 */
+  margin-bottom:38px;
+  letter-spacing:.02em;
+}
+
+/* 落款：靠右顶格，和正文拉开一点距离。
+   行距比正文紧一些——署名和日期本来就是贴着写的。 */
+.paper__sign{ margin-top:34px; text-align:right; }
+.paper__sign p{ margin:0 0 2px; }
+
+.paper__inner p:last-child{ margin-bottom:12px; }
+
+.paper__foot{ display:flex; justify-content:center; padding-top:26px; }
+/* 不是按钮，是滑到底、停一会儿之后慢慢浮出来的一行字 */
+.roll-cue{
+  font-family:var(--font-hand); font-size:21px; color:var(--hand);
+  padding:10px 4px; border:none; background:none;
+  opacity:0; transform:translateY(8px); pointer-events:none;
+  transition:opacity 1.4s var(--ease), transform 1.4s var(--ease), color .3s;
+  position:relative;
+}
+.roll-cue::after{
+  content:''; position:absolute; left:12%; right:12%; bottom:4px; height:1px;
+  background:rgba(90,64,36,.4); transform:scaleX(0); transform-origin:center;
+  transition:transform .45s var(--ease);
+}
+.roll-cue.is-on{ opacity:.78; transform:translateY(0); pointer-events:auto; }
+.roll-cue:hover{ opacity:1; color:#2f2013; }
+.roll-cue:hover::after{ transform:scaleX(1); }
+
+/* 卷起来 */
+.letter-wrap.is-rolling .paper{ max-height:0 !important; padding-top:0; padding-bottom:0; }
+.letter-wrap.is-rolling .rod--top span{ animation:rodspin 1.5s var(--ease); }
+@keyframes rodspin{ to{ filter:brightness(1.15); } }
+.letter-wrap.is-rolled{ animation:rolledaway 1s var(--ease) forwards; }
+@keyframes rolledaway{
+  0%{ transform:scale(1) translateY(0); opacity:1; }
+  40%{ transform:scale(.9) translateY(6px); opacity:1; }
+  100%{ transform:scale(.62) translateY(30px); opacity:0; }
+}
+
+.scroll-cue{
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+  font-size:20px; color:var(--ink-faint); z-index:20;
+  animation:cuebob 1.9s ease-in-out infinite; transition:opacity .5s;
+}
+@keyframes cuebob{ 0%,100%{ transform:translate(-50%,0); opacity:.5; } 50%{ transform:translate(-50%,7px); opacity:1; } }
+.scroll-cue.is-hidden{ opacity:0; }
+
+/* ===========================================================
+   3. 火柴过场
+=========================================================== */
+.scene--dark{ background:rgba(8,5,3,.88); }
+.match-stage{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+.match__line{
+  font-family:var(--font-hand); font-size:clamp(21px,3.1vw,27px); color:var(--ink-dim);
+  opacity:0; transform:translateY(8px);
+  transition:opacity 1s var(--ease), transform 1s var(--ease);
+}
+.match__line--2{ margin-top:8px; color:var(--ink-faint); }
+.match__line.is-on{ opacity:1; transform:translateY(0); }
+
+.match{
+  margin-top:42px; position:relative; cursor:grab;
+  touch-action:none; user-select:none;
+}
+.match:active{ cursor:grabbing; }
+.match__svg{ width:74px; height:auto; overflow:visible; display:block; }
+/* 没点着之前，火苗和光晕都藏起来 */
+.match__flame{ opacity:0; transform-box:fill-box; transform-origin:50% 100%; }
+.match.is-lit .match__flame{
+  opacity:1; animation:matchflicker 1.7s ease-in-out infinite;
+}
+@keyframes matchflicker{
+  0%,100%{ transform:scale(1) rotate(-2deg); }
+  30%{ transform:scale(1.1,.92) rotate(3deg); }
+  60%{ transform:scale(.92,1.1) rotate(-3deg); }
+}
+.match.is-lit .match__head{ fill:#5c3428; }
+/* 划的时候火柴倾斜 + 头部擦出火星 */
+.match.is-striking{ animation:strike .34s var(--ease); }
+@keyframes strike{
+  0%{ transform:rotate(0) translateX(0); }
+  45%{ transform:rotate(-15deg) translateX(-24px); }
+  100%{ transform:rotate(0) translateX(0); }
+}
+.match__spark{
+  position:absolute; left:50%; top:52px; width:8px; height:8px; border-radius:50%;
+  background:#ffd98a; opacity:0; pointer-events:none;
+  box-shadow:0 0 14px 5px rgba(255,200,110,.75);
+}
+.match.is-striking .match__spark{ animation:spark .34s ease-out; }
+@keyframes spark{
+  0%{ opacity:1; transform:translate(-50%,0) scale(.6); }
+  100%{ opacity:0; transform:translate(-190%,26px) scale(1.5); }
+}
+.match__cue{
+  margin-top:76px; font-size:11.5px; letter-spacing:.16em; color:var(--ink-faint);
+  transition:opacity .5s;
+}
+.match.is-lit ~ .match__cue{ opacity:0; }
+
+/* ===========================================================
+   4. 蛋糕
+=========================================================== */
+.cake-stage{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+.cake__line{
+  font-family:var(--font-hand); font-size:clamp(24px,3.6vw,32px); color:var(--ink);
+  margin-bottom:0; opacity:0; transform:translateY(8px);
+  transition:opacity .8s var(--ease), transform .8s var(--ease);
+}
+.cake__line.is-on{ opacity:1; transform:translateY(0); }
+
+.cake{ position:relative; cursor:pointer; padding:8px 18px; }
+.cake__art{ position:relative; z-index:1; line-height:0; }
+.cake__art img{ display:block; width:min(420px,74vw); height:auto; }
+.cake__art svg{ display:block; width:min(360px,70vw); height:auto; overflow:visible; }
+/* 蜡烛叠在蛋糕上方 */
+/* 火苗：按百分比钉在蛋糕图上的两根蜡烛顶端。
+   底部对齐给定的点，所以缩放到任何尺寸都不会错位。 */
+.flame-unit{
+  position:absolute; z-index:3; pointer-events:none;
+  transform:translate(-50%, -100%);
+}
+.flame-unit svg{ display:block; overflow:visible; }
+.flame{ transform-box:fill-box; transform-origin:50% 100%; animation:flicker 2.3s ease-in-out infinite; }
+.flame--b{ animation-delay:-1.05s; }
+@keyframes flicker{
+  0%,100%{ transform:scale(1) rotate(-1.5deg); opacity:1; }
+  25%{ transform:scale(1.09,.93) rotate(2.6deg); opacity:.9; }
+  50%{ transform:scale(.93,1.08) rotate(-2.6deg); opacity:1; }
+  75%{ transform:scale(1.05,.96) rotate(1.2deg); opacity:.95; }
+}
+.halo{ transform-box:fill-box; transform-origin:50% 50%; animation:halo 2.6s ease-in-out infinite; }
+.halo--b{ animation-delay:-1.2s; }
+@keyframes halo{ 0%,100%{ opacity:.42; transform:scale(1); } 50%{ opacity:.7; transform:scale(1.16); } }
+.smoke{ opacity:0; transform-box:fill-box; transform-origin:50% 100%; }
+@keyframes smoke{
+  0%{ opacity:.7; transform:translateY(0) scale(.5); }
+  100%{ opacity:0; transform:translateY(-56px) scale(1.7); }
+}
+.cake.is-out .flame, .cake.is-out .halo{ animation:none; opacity:0; transition:opacity .55s; }
+.cake.is-out .smoke{ animation:smoke 2.8s ease-out forwards; }
+.cake.is-out .smoke--b{ animation-delay:.22s; }
+
+.cake__wish{
+  margin-top:14px; font-family:var(--font-hand);
+  font-size:clamp(19px,2.7vw,25px); color:var(--ink-dim); line-height:1.7;
+  max-width:min(420px,88vw);
+  opacity:0; transform:translateY(8px);
+  transition:opacity 1s var(--ease), transform 1s var(--ease);
+}
+.cake__wish.is-on{ opacity:1; transform:translateY(0); }
+
+.wish-done{
+  margin-top:46px; font-family:var(--font-hand); font-size:20px;
+  color:var(--accent); padding:8px 4px; position:relative;
+  opacity:0; transform:translateY(8px); pointer-events:none;
+  transition:opacity 1s var(--ease), transform 1s var(--ease);
+}
+.wish-done::after{
+  content:''; position:absolute; left:8%; right:8%; bottom:2px; height:1px;
+  background:currentColor; opacity:.5; transform:scaleX(0);
+  transition:transform .4s var(--ease);
+}
+.wish-done.is-on{ opacity:.9; transform:translateY(0); pointer-events:auto; }
+.wish-done:hover{ opacity:1; }
+.wish-done:hover::after{ transform:scaleX(1); }
+.wish-done.is-gone{ opacity:0; pointer-events:none; }
+/* 还没许愿就去吹的时候，闪一下提示他先点这里 */
+.wish-done.is-nudge{ animation:wishnudge .7s var(--ease); }
+@keyframes wishnudge{
+  0%,100%{ transform:scale(1);   opacity:.9; }
+  30%    { transform:scale(1.16); opacity:1; }
+  60%    { transform:scale(.98);  opacity:1; }
+}
+
+.cake__sub{
+  margin-top:30px; font-size:12px; letter-spacing:.08em; color:var(--ink-faint);
+  transition:opacity .5s;
+}
+.cake.is-out ~ .cake__sub{ opacity:0; }
+.mic-btn{
+  margin-top:10px; font-size:11px; letter-spacing:.06em; color:var(--ink-faint);
+  border-bottom:1px solid var(--line-2); padding:3px 1px;
+  transition:color .25s, border-color .25s, opacity .5s;
+}
+.mic-btn:hover{ color:var(--accent); border-color:var(--accent); }
+.mic-btn.is-listening{ color:var(--accent); border-color:transparent; animation:mpulse 1.6s ease-in-out infinite; }
+@keyframes mpulse{ 0%,100%{ opacity:1; } 50%{ opacity:.45; } }
+.cake.is-out ~ .mic-btn{ opacity:0; pointer-events:none; }
+
+/* ===========================================================
+   4. 庆祝
+=========================================================== */
+.celebrate{ text-align:center; display:flex; flex-direction:column; align-items:center; }
+.celebrate__cn{
+  font-family:var(--font-hand); font-weight:400;
+  font-size:clamp(34px,6.6vw,64px); line-height:1.3; color:var(--accent);
+  text-shadow:0 0 42px rgba(224,167,94,.4);
+  opacity:0; transform:scale(.88);
+  transition:opacity 1s var(--ease), transform 1s var(--ease);
+}
+.celebrate__cn.is-on{ opacity:1; transform:scale(1); }
+
+.celebrate__en{
+  margin-top:20px; font-family:var(--font-hand-en); font-weight:400;
+  font-size:clamp(24px,4.2vw,44px); color:var(--ink-dim); line-height:1.4;
+  opacity:0; transform:translateY(10px);
+  transition:opacity .9s var(--ease) .5s, transform .9s var(--ease) .5s;
+}
+.celebrate__en.is-on{ opacity:1; transform:translateY(0); }
+/* Birthday / Everyday 两个词放大高亮 */
+.celebrate__en em{
+  font-style:normal; font-weight:600;
+  font-size:1.34em; color:var(--accent);
+  text-shadow:0 0 26px rgba(224,167,94,.5);
+  display:inline-block; animation:pop 2.6s ease-in-out infinite;
+}
+.celebrate__en em:nth-of-type(2){ animation-delay:-1.3s; }
+@keyframes pop{ 0%,100%{ transform:translateY(0) rotate(-1deg); } 50%{ transform:translateY(-5px) rotate(1.5deg); } }
+
+.next-btn{
+  margin-top:26px; padding:13px 30px; border-radius:999px;
+  border:1px solid var(--line-2); font-size:12.5px; letter-spacing:.12em; color:var(--ink-dim);
+  opacity:0; transform:translateY(10px); pointer-events:none;
+  transition:opacity .8s var(--ease) 1.1s, transform .8s var(--ease) 1.1s,
+             background .25s, color .25s, border-color .25s;
+}
+.next-btn.is-on{ opacity:1; transform:translateY(0); pointer-events:auto; }
+.next-btn:hover{ background:var(--accent); color:#2a1a08; border-color:var(--accent); }
+.next-btn--solid{ background:var(--accent); color:#2a1a08; border-color:var(--accent); font-weight:500; }
+.next-btn--solid:hover{ filter:brightness(1.08); }
+
+/* ===========================================================
+   6. 摸黑找礼物（手电筒）
+=========================================================== */
+.scene--pitch{ background:#050403; }
+.dark-stage{ display:flex; flex-direction:column; align-items:center; text-align:center; position:relative; }
+.dark__line{
+  position:relative; z-index:6;   /* 压在手电筒遮罩之上，始终可读 */
+  font-family:var(--font-hand); font-size:clamp(20px,2.9vw,26px); color:var(--ink-dim);
+  opacity:0; transform:translateY(8px);
+  transition:opacity 1.1s var(--ease), transform 1.1s var(--ease);
+}
+.dark__line.is-on{ opacity:1; transform:translateY(0); }
+.dark__hidden{ margin-top:56px; }
+.dark__box{ width:min(180px,44vw); height:auto; }
+.dark__cue{
+  position:relative; z-index:6;
+  margin-top:56px; font-size:11.5px; letter-spacing:.16em; color:var(--ink-faint);
+  transition:opacity .6s;
+}
+.dark__hidden.is-found ~ .dark__cue{ opacity:0; }
+.dark__hidden.is-found{ animation:foundpulse .7s var(--ease); }
+@keyframes foundpulse{
+  0%{ transform:scale(1); } 40%{ transform:scale(1.09); } 100%{ transform:scale(1); }
+}
+
+/* 遮罩层：跟着鼠标挖一个圆洞，就是手电筒 */
+.torch{
+  position:absolute; inset:0; z-index:5;
+  background:#050403;
+  -webkit-mask-image:radial-gradient(circle 150px at var(--tx,50%) var(--ty,50%),
+    transparent 0%, transparent 42%, #000 78%);
+  mask-image:radial-gradient(circle 150px at var(--tx,50%) var(--ty,50%),
+    transparent 0%, transparent 42%, #000 78%);
+  transition:opacity 1.2s var(--ease);
+}
+.torch.is-off{ opacity:0; pointer-events:none; }
+
+/* ===========================================================
+   7. 礼物 → 安装包弹簧弹出
+=========================================================== */
+.gift-stage{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+.gift__line{
+  font-family:var(--font-hand); font-size:clamp(21px,3vw,27px); color:var(--ink);
+  margin-bottom:14px; opacity:0; transform:translateY(8px);
+  transition:opacity .8s var(--ease), transform .8s var(--ease);
+}
+.gift__line.is-on{ opacity:1; transform:translateY(0); }
+
+/* 盒子和弹出物共用一块定位区 */
+.gift-area{
+  position:relative; display:flex; flex-direction:column; align-items:center;
+}
+.dmg-slot{
+  height:132px; display:flex; align-items:flex-end; justify-content:center;
+  margin-bottom:-6px;
+}
+
+.giftbox{ cursor:pointer; position:relative; z-index:2; }
+.giftbox__svg{ width:min(180px,44vw); height:auto; overflow:visible; }
+.giftbox:hover .giftbox__lid{ transform:translateY(-7px) rotate(-1.5deg); }
+.giftbox__lid{ transform-box:fill-box; transform-origin:50% 100%; transition:transform .4s var(--ease); }
+.giftbox.is-open .giftbox__lid{ animation:lidoff 1s var(--ease) forwards; }
+@keyframes lidoff{
+  0%{ transform:translateY(0) rotate(0); opacity:1; }
+  30%{ transform:translateY(-88px) rotate(-16deg); opacity:1; }
+  100%{ transform:translateY(-230px) rotate(-46deg); opacity:0; }
+}
+.giftbox.is-open{ animation:boxsquash .55s var(--ease); }
+@keyframes boxsquash{
+  0%{ transform:scale(1,1); }
+  30%{ transform:scale(1.1,.9); }
+  55%{ transform:scale(.95,1.06); }
+  100%{ transform:scale(1,1); }
+}
+
+/* 安装包：从盒子里"啵"一下弹出来，带回弹 */
+.dmg{
+  position:relative; z-index:1; text-align:center;
+  transform:translateY(150px) scale(.15); opacity:0;
+  pointer-events:none;
+}
+/* 从盒子里"啵"一下弹上来，冲过头再回落 */
+.dmg.is-out{ animation:springout 1.2s cubic-bezier(.2,1.3,.35,1) forwards; }
+@keyframes springout{
+  0%   { transform:translateY(150px) scale(.15); opacity:0; }
+  15%  { opacity:1; }
+  52%  { transform:translateY(-26px)  scale(1.18); opacity:1; }
+  70%  { transform:translateY(10px)   scale(.93);  opacity:1; }
+  85%  { transform:translateY(-7px)   scale(1.05); opacity:1; }
+  100% { transform:translateY(0)      scale(1);    opacity:1; }
+}
+.dmg__svg{ width:82px; height:82px; filter:drop-shadow(0 12px 26px rgba(0,0,0,.5)); }
+.dmg__name{
+  margin-top:9px; font-size:11.5px; letter-spacing:.06em; color:var(--ink-dim);
+  white-space:nowrap;
+}
+/* 弹出后轻轻上下浮，像悬在半空 */
+.dmg.is-float{ opacity:1; animation:dmgfloat 3.4s ease-in-out infinite; }
+@keyframes dmgfloat{
+  0%,100%{ transform:translateY(0)    scale(1); }
+  50%    { transform:translateY(-11px) scale(1); }
+}
+
+/* 弹出瞬间的一圈冲击波 */
+.burst{
+  position:absolute; left:50%; top:132px; width:16px; height:16px; border-radius:50%;
+  transform:translate(-50%,50%); pointer-events:none; opacity:0;
+  border:3px solid var(--accent);
+}
+.burst.is-on{ animation:burst .85s ease-out; }
+@keyframes burst{
+  0%  { opacity:.95; transform:translate(-50%,50%) scale(.3); border-width:4px; }
+  100%{ opacity:0;   transform:translate(-50%,50%) scale(11);  border-width:1px; }
+}
+
+.gift__sub{
+  margin-top:12px; font-size:12px; letter-spacing:.08em; color:var(--ink-faint);
+  transition:opacity .5s;
+}
+
+/* 安装包弹出后才出现的文案和按钮 */
+.pet__desc{
+  margin-top:14px; font-family:var(--font-hand); font-size:clamp(17px,2.2vw,21px);
+  line-height:1.85; color:var(--ink); max-width:min(430px, 88vw);
+  opacity:0; transform:translateY(10px); pointer-events:none;
+  transition:opacity .9s var(--ease), transform .9s var(--ease);
+}
+.pet__desc.is-on{ opacity:1; transform:translateY(0); }
+.pet__note{
+  margin-top:12px; font-size:11px; color:var(--ink-faint); max-width:32ch;
+  opacity:0; transition:opacity .8s var(--ease);
+}
+.pet__note.is-on{ opacity:1; }
+
+/* ---------- 响应式 ---------- */
+@media (max-width:640px){
+  .scene{ padding:70px 16px 40px; }
+  .lock__pass{ gap:9px; }
+  .lock__box{ width:40px; height:52px; font-size:20px; }
+  .paper{ padding:34px 26px 26px; }
+  .dmg__svg{ width:84px; height:84px; }
+  .hud__back span{ display:none; }
+  .paper__inner p{ font-size:19px; line-height:34px; margin-bottom:34px; }
+  .paper{ background:
+    repeating-linear-gradient(180deg, transparent, transparent 33px, var(--paper-line) 33px, var(--paper-line) 34px),
+    linear-gradient(175deg, var(--paper), var(--paper-2)); }
+}
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+}
+
+/* 桌宠那段话可能有好几行，每行单独成块才拉得开距离 */
+.pet__p{ display:block; }

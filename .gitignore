@@ -1,0 +1,15 @@
+# 你自己的内容，别提交
+site/content.js
+site/photo/
+site/music/
+生日快乐.html
+_artifact.html
+
+# 构建产物
+node_modules/
+pet/app/dist/
+pet/app/node_modules/
+pet/app/assets/台词.json
+pet/调速台.html
+
+.DS_Store
